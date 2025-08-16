@@ -71,3 +71,23 @@ def create_archivo(nombre: str,id_usuario_propietario: int, id_tipo_archivo: int
             "id_carpeta_ubicacion": params["id_carpeta_ubicacion"],
             "estado_papelera": params["estado_papelera"]
         }
+
+
+def delete_archivo(id_archivo: int) -> dict:
+    query = """
+        DELETE FROM archivos
+        WHERE id_archivo = :id_archivo
+    """
+    
+    params = {
+        "id_archivo": id_archivo
+    }
+
+    # Ejecuta la eliminación y confirma cambios
+    execute_query_json(query, params=params, needs_commit=True)
+
+    # Devuelve un mensaje indicando éxito
+    return {
+        "message": f"Archivo con id {id_archivo} eliminado correctamente."
+    }
+

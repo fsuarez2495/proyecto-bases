@@ -48,9 +48,9 @@ def create_carpeta(nombre: str) -> dict:
         "nombre": nombre,
         "fecha_creacion": datetime.now(),
         "fecha_ultima_modificacion": datetime.now(),
-        "id_usuario_propietario": 10,
+        "id_usuario_propietario": 21,
         "id_carpeta_padre": None,
-        "id_color": 9,
+        "id_color": 1,
         "estado_papelera": 0
     }
 
@@ -66,4 +66,22 @@ def create_carpeta(nombre: str) -> dict:
         "id_carpeta_padre": params["id_carpeta_padre"],
         "id_color": params["id_color"],
         "estado_papelera": params["estado_papelera"]
+    }
+
+def delete_carpeta(id_carpeta: int) -> dict:
+    query = """
+        DELETE FROM carpetas
+        WHERE id_carpeta = :id_carpeta
+    """
+
+    params = {
+        "id_carpeta": id_carpeta
+    }
+
+    # Ejecuta la eliminación y confirma cambios
+    execute_query_json(query, params=params, needs_commit=True)
+
+    # Devuelve un mensaje indicando éxito
+    return {
+        "message": f"Carpeta con id {id_carpeta} eliminada correctamente."
     }
