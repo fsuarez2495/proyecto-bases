@@ -11,6 +11,8 @@ from controllers.firebase import register_user_firebase, login_user_firebase
 from models.carpetas import Carpetas
 from models.compartidos import Compartidos
 from models.archivos import Archivos
+from models.comentarios import Comentarios
+from controllers.comentarioscontrollers import get_all_comentarios,create_comentario, delete_comentario
 from controllers.archivoscontroller import get_all_archivos,create_archivo, delete_archivo
 from controllers.compartidoscontroller import get_all_compartidos, create_compartido
 from controllers.carpetacontroller import get_all_folders, create_carpeta,delete_carpeta
@@ -108,6 +110,21 @@ async def add_archivo(archivo:Archivos):
 async def remove_archivo(id_archivo: int):
     return delete_archivo(id_archivo)
 
+@app.get("/comentarios", response_model=List[Comentarios])
+async def list_comentarios():
+    return get_all_comentarios()
+
+@app.post("/comentarios", response_model=Comentarios)
+async def add_comentario(comentario: Comentarios):
+    return create_comentario(
+        descripcion=comentario.descripcion,
+        id_usuario_comentador=comentario.id_usuario_comentador,
+        id_archivo=comentario.id_archivo
+    )
+
+@app.delete("/comentarios/{id_comentario}")
+async def remove_comentario(id_comentario: int):
+    return delete_comentario(id_comentario)
 
 
 
