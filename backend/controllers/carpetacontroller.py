@@ -48,9 +48,9 @@ def create_carpeta(nombre: str) -> dict:
         "nombre": nombre,
         "fecha_creacion": datetime.now(),
         "fecha_ultima_modificacion": datetime.now(),
-        "id_usuario_propietario": 10,
+        "id_usuario_propietario": 21,
         "id_carpeta_padre": None,
-        "id_color": 9,
+        "id_color": 1,
         "estado_papelera": 0
     }
 

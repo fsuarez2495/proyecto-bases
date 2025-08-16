@@ -74,7 +74,6 @@ async def list_carpetas():
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
 
-<<<<<<< HEAD
 
 @app.delete("/carpetas/{id_carpeta}")
 async def remove_carpeta(id_carpeta: int):
@@ -112,7 +111,5 @@ async def remove_archivo(id_archivo: int):
 
 
 
-=======
->>>>>>> 0e17192dd7633d6c9acf6cadf4315f0517885a5f
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
