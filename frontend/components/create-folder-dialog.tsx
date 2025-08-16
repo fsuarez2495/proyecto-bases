@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,17 +19,42 @@ interface CreateFolderDialogProps {
   children: React.ReactNode
 }
 
+interface Color {
+  id_color: number
+  nombre: string
+  codigo_hex: string
+}
+
 export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
   const [open, setOpen] = useState(false)
   const [folderName, setFolderName] = useState("")
+  const [colors, setColors] = useState<Color[]>([])
+  const [selectedColor, setSelectedColor] = useState<number | null>(null)
+
   const { createFolder, loading } = useFiles()
+
+  // 🔹 Obtener colores desde el backend
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/colores")
+        const data = await res.json()
+        setColors(data)
+      } catch (error) {
+        console.error("Error al cargar colores:", error)
+      }
+    }
+
+    if (open) fetchColors()
+  }, [open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!folderName.trim()) return
+    if (!folderName.trim() || !selectedColor) return
 
-    await createFolder(folderName.trim())
+    await createFolder(folderName.trim(), selectedColor) // 🔹 Le mandamos color
     setFolderName("")
+    setSelectedColor(null)
     setOpen(false)
   }
 
@@ -55,11 +79,32 @@ export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
             />
           </div>
 
+          {/* 🔹 Selector de colores */}
+          <div className="space-y-2">
+            <Label>Color de la carpeta</Label>
+            <div className="flex flex-wrap gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color.id_color}
+                  type="button"
+                  className={`w-8 h-8 rounded-full border-2 transition 
+                    ${selectedColor === color.id_color ? "border-black scale-110" : "border-gray-300"}`}
+                  style={{ backgroundColor: color.codigo_hex }}
+                  onClick={() => setSelectedColor(color.id_color)}
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!folderName.trim() || loading} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              type="submit"
+              disabled={!folderName.trim() || !selectedColor || loading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               {loading ? "Creando..." : "Crear"}
             </Button>
           </div>

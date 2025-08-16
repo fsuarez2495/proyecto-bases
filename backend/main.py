@@ -3,12 +3,12 @@ import json
 from fastapi import FastAPI, Request, Response, Query, Body
 from typing import List, Optional
 from models.paises import Pais
-from backend.models.crear_carpetas import CarpetaCreate
 from utils.database import execute_query_json
 from models.userregister import UserRegister
 from models.userlogin import UserLogin
 from controllers.firebase import register_user_firebase, login_user_firebase
-from controllers.carpetas import crear_carpeta_controller
+from models.colores import Colores
+from controllers.colores_controller import get_all_colores
 
 from models.carpetas import Carpetas
 from controllers.carpetacontroller import get_all_folders, create_carpeta
@@ -68,10 +68,12 @@ def get_paises():
 async def list_carpetas():
     return get_all_folders()
 
-
 @app.post("/carpetas", response_model=Carpetas)
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
 
+@app.get("/colores", response_model=List[Colores])
+async def list_colores():
+    return get_all_colores()
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
