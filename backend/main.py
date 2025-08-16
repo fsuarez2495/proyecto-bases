@@ -12,9 +12,9 @@ from controllers.firebase import register_user_firebase, login_user_firebase
 from models.carpetas import Carpetas
 from models.compartidos import Compartidos
 from models.archivos import Archivos
-from controllers.archivoscontroller import get_all_archivos,create_archivo
+from controllers.archivoscontroller import get_all_archivos,create_archivo, delete_archivo
 from controllers.compartidoscontroller import get_all_compartidos, create_compartido
-from controllers.carpetacontroller import get_all_folders, create_carpeta
+from controllers.carpetacontroller import get_all_folders, create_carpeta,delete_carpeta
 
 from contextlib import asynccontextmanager
 
@@ -76,6 +76,11 @@ async def list_carpetas():
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
 
+
+@app.delete("/carpetas/{id_carpeta}")
+async def remove_carpeta(id_carpeta: int):
+    return delete_carpeta(id_carpeta)
+
 @app.get("/compartidos", response_model=List[Compartidos])
 async def list_compartidos():
     return get_all_compartidos()
@@ -100,6 +105,11 @@ async def add_archivo(archivo:Archivos):
                            id_usuario_propietario=archivo.id_usuario_propietario,
                             id_tipo_archivo=archivo.id_tipo_archivo
                         )
+
+@app.delete("/archivos/{id_archivo}")
+async def remove_archivo(id_archivo: int):
+    return delete_archivo(id_archivo)
+
 
 
 
