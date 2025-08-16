@@ -143,6 +143,7 @@ def get_usuario_por_correo(correo: str) -> Usuario | None:
             apellido=u["apellido"],
             correo_electronico=u["correo_electronico"],
             id_pais=u["id_pais"],
+            id_almacenamiento=u["id_almacenamiento"]
         )
     return None
 
