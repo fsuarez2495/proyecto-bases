@@ -4,16 +4,18 @@ from models.carpetas import Carpetas
 from typing import List
 from datetime import datetime
 
+
 def get_all_folders() -> List[Carpetas]:
-    query = """
-        SELECT 
-            *
-        FROM carpetas
-        ORDER BY nombre
-    """
-    result = execute_query_json(query)
-    folders_list = json.loads(result)
-    return [Carpetas(**folder) for folder in folders_list]
+    query = "SELECT * FROM carpetas ORDER BY nombre"
+    
+    # execute_query_json returns JSON string
+    result_json = execute_query_json(query)
+    
+    # Convert JSON string to Python list of dicts
+    result_list = json.loads(result_json)
+    
+    # Convert each dict to Carpetas Pydantic model
+    return [Carpetas(**folder) for folder in result_list]
 
 
 def create_carpeta(nombre: str) -> dict:
