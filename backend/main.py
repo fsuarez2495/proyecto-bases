@@ -1,12 +1,15 @@
 import uvicorn
 import json
-from fastapi import FastAPI, Request, Response, Query
+from fastapi import FastAPI, Request, Response, Query, Body
 from typing import List, Optional
 from models.paises import Pais
 from utils.database import execute_query_json
 from models.userregister import UserRegister
 from models.userlogin import UserLogin
 from controllers.firebase import register_user_firebase, login_user_firebase
+
+from models.carpetas import Carpetas
+from controllers.carpetacontroller import get_all_folders, create_carpeta
 
 from contextlib import asynccontextmanager
 
@@ -58,6 +61,15 @@ async def login(user: UserLogin):
 def get_paises():
     result = execute_query_json("SELECT id_pais, nombre FROM paises ORDER BY nombre")
     return json.loads(result)
+
+@app.get("/carpetas", response_model=List[Carpetas])
+async def list_carpetas():
+    return get_all_folders()
+
+
+@app.post("/carpetas", response_model=Carpetas)
+async def add_carpeta(carpeta: Carpetas):
+    return create_carpeta(carpeta.nombre)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
