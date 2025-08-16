@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -60,24 +59,29 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
       for (const file of selectedFiles) {
         const body = {
           nombre: file.name,
-          id_tipo_archivo: 1,
+          id_tipo_archivo: 1, // make sure this exists in DB
           id_usuario_propietario: userId,
           tamano_archivo: file.size,
         }
 
-        const res = await fetch("http://127.0.0.1:8000/archivos", {
+        const res = await fetch("http://localhost:8000/archivos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         })
 
-        const data = await res.text()
-        console.log("Upload response:", res.status, data)
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(`Error uploading ${file.name}: ${text}`)
+        }
 
-        if (!res.ok) throw new Error(`Error uploading ${file.name}: ${data}`)
+        const data = await res.json()
+        console.log("Upload success:", data)
       }
+
       setSelectedFiles([])
       setOpen(false)
+      alert("Archivos subidos correctamente")
     } catch (err: any) {
       console.error(err)
       alert(err.message || "Error uploading files")
@@ -104,7 +108,6 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Zona de arrastrar y soltar */}
           <div
             className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
             onDrop={handleDrop}
@@ -118,7 +121,6 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
           </div>
 
-          {/* Lista de archivos seleccionados */}
           {selectedFiles.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Archivos seleccionados:</h4>
@@ -141,7 +143,6 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
             </div>
           )}
 
-          {/* Progreso de subida */}
           {uploading && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -152,7 +153,6 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
             </div>
           )}
 
-          {/* Botones de acción */}
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setOpen(false)} disabled={uploading}>
               Cancelar
