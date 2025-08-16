@@ -61,9 +61,5 @@ def get_paises():
     result = execute_query_json("SELECT id_pais, nombre FROM paises ORDER BY nombre")
     return json.loads(result)
 
-@app.post("/carpetas/")
-async def crear_carpeta(carpeta: CarpetaCreate):
-    return await crear_carpeta_controller(carpeta)
-
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
