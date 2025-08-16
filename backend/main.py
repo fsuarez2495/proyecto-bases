@@ -11,6 +11,8 @@ from controllers.firebase import register_user_firebase, login_user_firebase
 
 from models.carpetas import Carpetas
 from models.compartidos import Compartidos
+from models.archivos import Archivos
+from controllers.archivoscontroller import get_all_archivos,create_archivo
 from controllers.compartidoscontroller import get_all_compartidos, create_compartido
 from controllers.carpetacontroller import get_all_folders, create_carpeta
 
@@ -86,6 +88,18 @@ async def add_compartido(compartido:Compartidos):
                             id_usuario_receptor=compartido.id_usuario_receptor
                             )
 
+
+@app.get("/archivos", response_model=List[Archivos])
+async def list_archivos():
+    return get_all_archivos()
+
+
+@app.post("/archivos", response_model=Archivos)
+async def add_archivo(archivo:Archivos):
+    return create_archivo( nombre = archivo.nombre,
+                           id_usuario_propietario=archivo.id_usuario_propietario,
+                            id_tipo_archivo=archivo.id_tipo_archivo
+                        )
 
 
 
