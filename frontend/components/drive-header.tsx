@@ -94,7 +94,7 @@ export function DriveHeader() {
                   <p className="font-medium">
                     {user.nombre} {user.apellido}
                   </p>
-                  <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
+                  <p className="w-[200px] truncate text-sm text-muted-foreground">{user.correo_electronico}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />

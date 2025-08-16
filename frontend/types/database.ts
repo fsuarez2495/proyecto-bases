@@ -97,7 +97,7 @@ export interface LoginCredentials {
 
 export interface AuthUser {
   id: number
-  email: string
+  correo_electronico: string
   nombre: string
   apellido: string
   pais: Pais

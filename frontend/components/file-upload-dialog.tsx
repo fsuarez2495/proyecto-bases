@@ -27,6 +27,41 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploadFile } = useFiles()
 
+  // ------------------ API FUNCTIONS -------------------
+  const getArchivos = async () => {
+    const res = await fetch("http://localhost:8000/archivos")
+    if (!res.ok) throw new Error("Error fetching archivos")
+    return res.json()
+  }
+
+  const createArchivo = async (
+    nombre: string,
+    id_usuario_propietario: number,
+    id_tipo_archivo: number
+  ) => {
+    const res = await fetch("http://localhost:8000/archivos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, id_usuario_propietario, id_tipo_archivo }),
+    })
+    if (!res.ok) throw new Error("Error creating archivo")
+    return res.json()
+  }
+
+  const deleteArchivo = async (id_archivo: number) => {
+    const res = await fetch(`http://localhost:8000/archivos/${id_archivo}`, {
+      method: "DELETE",
+    })
+    if (!res.ok) throw new Error("Error deleting archivo")
+    return res.json()
+  }
+
+  const refreshArchivos = async () => {
+    const data = await getArchivos()
+    console.log("Archivos actuales:", data)
+  }
+
+  // ------------------ HANDLERS -------------------
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     setSelectedFiles(files)
@@ -52,10 +87,12 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
     setUploading(true)
     try {
       for (const file of selectedFiles) {
-        await uploadFile(file)
+        // Post metadata expected by backend
+        await createArchivo(file.name, 41, 1) // ⚡ fixed body
       }
       setSelectedFiles([])
       setOpen(false)
+      await refreshArchivos()
     } finally {
       setUploading(false)
     }
@@ -69,6 +106,7 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
+  // ------------------ UI -------------------
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
