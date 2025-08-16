@@ -7,7 +7,8 @@ from utils.database import execute_query_json
 from models.userregister import UserRegister
 from models.userlogin import UserLogin
 from controllers.firebase import register_user_firebase, login_user_firebase
-
+from models.colores import Colores
+from controllers.colores_controller import get_all_colores
 from models.carpetas import Carpetas
 from models.compartidos import Compartidos
 from models.archivos import Archivos
@@ -73,6 +74,10 @@ async def list_carpetas():
 @app.post("/carpetas", response_model=Carpetas)
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
+
+@app.get("/colores", response_model=List[Colores])
+async def list_colores():
+    return get_all_colores()
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
