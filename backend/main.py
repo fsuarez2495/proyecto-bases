@@ -10,6 +10,8 @@ from controllers.firebase import register_user_firebase, login_user_firebase
 
 
 from models.carpetas import Carpetas
+from models.compartidos import Compartidos
+from controllers.compartidoscontroller import get_all_compartidos, create_compartido
 from controllers.carpetacontroller import get_all_folders, create_carpeta
 
 from contextlib import asynccontextmanager
@@ -71,6 +73,21 @@ async def list_carpetas():
 @app.post("/carpetas", response_model=Carpetas)
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
+
+@app.get("/compartidos", response_model=List[Compartidos])
+async def list_compartidos():
+    return get_all_compartidos()
+
+
+@app.post("/compartidos", response_model=Compartidos)
+async def add_compartido(compartido:Compartidos):
+    return create_compartido( id_usuario_comparte=compartido.id_usuario_comparte,
+                            id_archivo_compartido=compartido.id_archivo_compartido,
+                            id_usuario_receptor=compartido.id_usuario_receptor
+                            )
+
+
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
