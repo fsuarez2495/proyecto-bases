@@ -8,7 +8,6 @@ from models.userregister import UserRegister
 from models.userlogin import UserLogin
 from controllers.firebase import register_user_firebase, login_user_firebase
 
-
 from models.carpetas import Carpetas
 from models.compartidos import Compartidos
 from models.archivos import Archivos
@@ -71,11 +70,11 @@ def get_paises():
 async def list_carpetas():
     return get_all_folders()
 
-
 @app.post("/carpetas", response_model=Carpetas)
 async def add_carpeta(carpeta: Carpetas):
     return create_carpeta(carpeta.nombre)
 
+<<<<<<< HEAD
 
 @app.delete("/carpetas/{id_carpeta}")
 async def remove_carpeta(id_carpeta: int):
@@ -113,5 +112,7 @@ async def remove_archivo(id_archivo: int):
 
 
 
+=======
+>>>>>>> 0e17192dd7633d6c9acf6cadf4315f0517885a5f
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")

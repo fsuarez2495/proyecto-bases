@@ -47,6 +47,4 @@ SELECT *
 from CARPETAS;
 
 SELECT *
-from COMPARTIDOS;
- 
-commit;
+FROM USUARIOS2;
