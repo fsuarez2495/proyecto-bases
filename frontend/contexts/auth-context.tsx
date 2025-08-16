@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Intentar restaurar sesión desde localStorage
+
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
       setUser(JSON.parse(storedUser))
@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const loggedUser: AuthUser = {
           id: 1,
           email: credentials.correo_electronico,
-          nombre: "Juan",
-          apellido: "Pérez",
+          nombre: "Maria",
+          apellido: "Mejia",
           pais: { id: 1, nombre: "México", codigo: "MX" },
           almacenamiento: {
             id: 1,
