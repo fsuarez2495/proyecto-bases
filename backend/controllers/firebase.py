@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from utils.database import execute_query_json
 from utils.security import create_jwt_token
 from models.userregister import UserRegister
-from models.userlogin import UserLogin
+from models.userlogin import UserLogin, Usuario
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -76,6 +76,7 @@ async def register_user_firebase(user: UserRegister) -> dict:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al registrar usuario: {e}")
 
+#Login 
 async def login_user_firebase(user: UserLogin):
     api_key = os.getenv("FIREBASE_API_KEY")
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
@@ -119,5 +120,35 @@ async def login_user_firebase(user: UserLogin):
         logger.exception("Error obteniendo datos del usuario en Oracle")
         raise HTTPException(status_code=500, detail="Error obteniendo datos del usuario")
 
+#Usuario autenticado 
+def get_usuario_por_correo(correo: str) -> Usuario | None:
+    query = """
+        SELECT 
+            id_usuario,
+            nombre,
+            apellido,
+            correo_electronico,
+            id_pais,
+            espacio_total,
+            espacio_usado
+        FROM usuarios
+        WHERE correo_electronico = :correo
+    """
+    result = execute_query_json(query, params={"correo": correo})
+    usuarios = json.loads(result)
+    if usuarios:
+        u = usuarios[0]
+        return Usuario(
+            id=u["id_usuario"],
+            nombre=u["nombre"],
+            apellido=u["apellido"],
+            correo_electronico=u["correo_electronico"],
+            id_pais=u["id_pais"],
+            almacenamiento={
+                "espacio_total": u["espacio_total"],
+                "espacio_usado": u["espacio_usado"]
+            }
+        )
+    return None
 
 

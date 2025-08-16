@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import uvicorn
 import json
 from fastapi import FastAPI, Request, Response, Query, Body
@@ -6,7 +7,7 @@ from models.paises import Pais
 from utils.database import execute_query_json
 from models.userregister import UserRegister
 from models.userlogin import UserLogin
-from controllers.firebase import register_user_firebase, login_user_firebase
+from controllers.firebase import get_usuario_por_correo, register_user_firebase, login_user_firebase
 from models.colores import Colores
 from controllers.colores_controller import get_all_colores
 from models.carpetas import Carpetas
@@ -15,6 +16,7 @@ from models.archivos import Archivos
 from controllers.archivoscontroller import get_all_archivos,create_archivo
 from controllers.compartidoscontroller import get_all_compartidos, create_compartido
 from controllers.carpetacontroller import get_all_folders, create_carpeta
+
 
 from contextlib import asynccontextmanager
 
@@ -61,6 +63,13 @@ async def signup(user: UserRegister):
 @app.post("/login")
 async def login(user: UserLogin):
     return await login_user_firebase(user)
+
+@app.get("/usuarios", response_model=UserLogin)
+async def obtener_usuario(correo: str):
+    usuario = get_usuario_por_correo(correo)
+    if usuario:
+        return usuario
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
 @app.get("/paises", response_model=List[Pais])
 def get_paises():

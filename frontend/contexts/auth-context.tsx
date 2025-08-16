@@ -36,28 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(credentials),
       })
       const data = await res.json()
+if (data.idToken) {
+  // Obtener usuario real desde backend
+ const resUsuario = await fetch(`http://127.0.0.1:8000/usuarios?correo=${encodeURIComponent(credentials.correo_electronico)}`)
+  if (!resUsuario.ok) throw new Error("No se pudo obtener usuario")
 
-      if (data.idToken) {
-        // Guardar usuario en contexto y localStorage
-        const loggedUser: AuthUser = {
-          id: 1,
-          email: credentials.correo_electronico,
-          nombre: "Maria",
-          apellido: "Mejia",
-          pais: { id: 1, nombre: "México", codigo: "MX" },
-          almacenamiento: {
-            id: 1,
-            usuario_id: 1,
-            espacio_total: 15000000000,
-            espacio_usado: 2500000000,
-            fecha_actualizacion: new Date(),
-          },
-        }
-        setUser(loggedUser)
-        localStorage.setItem("user", JSON.stringify(loggedUser))
-        setLoading(false)
-        return true
-      }
+  const usuarioData = await resUsuario.json()
+
+  setUser(usuarioData)
+  localStorage.setItem("user", JSON.stringify(usuarioData))
+  setLoading(false)
+  return true
+}
 
       setLoading(false)
       return false
