@@ -78,45 +78,4 @@ async def register_user_firebase(user: UserRegister) -> dict:
 
 
 
-async def login_user_firebase(user: UserLogin):
-    api_key = os.getenv("FIREBASE_API_KEY")
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
 
-    payload = {"email": user.correo_electronico, "password": user.contrasena, "returnSecureToken": True}
-    response = requests.post(url, json=payload)
-    response_data = response.json()
-
-    if "error" in response_data:
-        logger.warning(f"Firebase login failed: {response_data['error']}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Error al autenticar usuario: {response_data['error']['message']}"
-        )
-
-    query = """
-        SELECT correo_electronico, nombre, apellido
-        FROM usuarios2
-        WHERE correo_electronico = :correo_electronico
-
-    """
-
-    try:
-        result_json =  execute_query_json(query, (user.correo_electronico,), needs_commit=False)
-        result_dict = json.loads(result_json)
-
-        if not result_dict:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado en la base de datos")
-
-        user_db = result_dict[0]
-
-        return {
-            "message": "Usuario autenticado exitosamente",
-            "idToken": create_jwt_token(
-                user_db["nombre"],
-                user_db["apellido"],
-                user.correo_electronico,
-            )
-        }
-    except Exception as e:
-        logger.exception("Error obteniendo datos del usuario en Oracle")
-        raise HTTPException(status_code=500, detail="Error obteniendo datos del usuario")

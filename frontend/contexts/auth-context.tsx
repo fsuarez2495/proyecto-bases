@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 import type { AuthUser, LoginCredentials, RegisterCredentials } from "@/types/database"
 
 interface AuthContextType {
@@ -19,45 +18,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simular verificación de token almacenado
-    const checkAuth = async () => {
-      const token = localStorage.getItem("auth_token")
-      if (token) {
-        // En una implementación real, verificarías el token con el backend
-        // Por ahora simulamos un usuario autenticado
-        const mockUser: AuthUser = {
-          id: 1,
-          email: "usuario@ejemplo.com",
-          nombre: "Juan",
-          apellido: "Pérez",
-          pais: { id: 1, nombre: "México", codigo: "MX" },
-          almacenamiento: {
-            id: 1,
-            usuario_id: 1,
-            espacio_total: 15000000000, // 15GB
-            espacio_usado: 2500000000, // 2.5GB
-            fecha_actualizacion: new Date(),
-          },
-        }
-        setUser(mockUser)
-      }
-      setLoading(false)
+    // Intentar restaurar sesión desde localStorage
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
     }
-
-    checkAuth()
+    setLoading(false)
   }, [])
 
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
     setLoading(true)
     try {
-      // Simular llamada a API de Oracle
-      // En implementación real: const response = await fetch('/api/auth/login', { ... })
 
-      // Simulación de validación
-      if (credentials.email && credentials.password) {
-        const mockUser: AuthUser = {
+      const res = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      })
+      const data = await res.json()
+
+      if (data.idToken) {
+        // Guardar usuario en contexto y localStorage
+        const loggedUser: AuthUser = {
           id: 1,
-          email: credentials.email,
+          email: credentials.correo_electronico,
           nombre: "Juan",
           apellido: "Pérez",
           pais: { id: 1, nombre: "México", codigo: "MX" },
@@ -69,16 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fecha_actualizacion: new Date(),
           },
         }
-
-        setUser(mockUser)
-        localStorage.setItem("auth_token", "mock_jwt_token")
+        setUser(loggedUser)
+        localStorage.setItem("user", JSON.stringify(loggedUser))
         setLoading(false)
         return true
       }
 
       setLoading(false)
       return false
-    } catch (error) {
+    } catch (err) {
       setLoading(false)
       return false
     }
@@ -86,34 +69,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("auth_token")
+    localStorage.removeItem("user")
   }
-
 
 const register = async (credentials: RegisterCredentials): Promise<boolean> => {
   setLoading(true)
   try {
-    // Aquí va la lógica real de registro (llamada a tu API)
-    // Simulación:
-    if (credentials.correo_electronico && credentials.contrasena) {
+    const res = await fetch("http://127.0.0.1:8000/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    })
+
+    if (res.ok) {
+      // Registro exitoso
       setLoading(false)
       return true
     }
+
     setLoading(false)
     return false
-  } catch (error) {
+  } catch (err) {
+    console.error("Error registrando usuario:", err)
     setLoading(false)
     return false
   }
 }
 
-  return <AuthContext.Provider value={{ user, login, logout, register, loading }}>{children}</AuthContext.Provider>
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider")
   return context
 }

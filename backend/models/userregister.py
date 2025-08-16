@@ -6,7 +6,7 @@ class UserRegister(BaseModel):
     apellido: str = Field(..., max_length=50)
     correo_electronico: str = Field(..., max_length=50)
     contrasena: str = Field(..., min_length=8, max_length=64)
-    id_pais: int = Field(..., ge=1)  # Asumiendo que los IDs de país son enteros positivos
+    id_pais: int = Field(..., ge=1) 
 
 
     @validator('correo_electronico')

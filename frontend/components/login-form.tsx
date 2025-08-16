@@ -1,63 +1,37 @@
 "use client"
-import React from "react"
-//import type React from "react"
-import Link from "next/link"
-import { useState } from "react"
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
 import type { LoginCredentials } from "@/types/database"
-import { useRouter } from "next/navigation"
 
 export function LoginForm() {
   const router = useRouter()
+  const { login, loading } = useAuth()
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: "",
-    password: "",
+    correo_electronico: "",
+    contrasena: "",
+
   })
   const [error, setError] = useState("")
-  const { login, loading } = useAuth()
-
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  try {
-    const res = await fetch("http://127.0.0.1:8000/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: credentials.email,   // desde tu state
-        password: credentials.password
-      }),
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      // Login exitoso → redirigir al dashboard
-      router.push("/");
+    e.preventDefault()
+    const success = await login(credentials)
+    if (success) {
+      router.push("/") // Redirige al homepage
     } else {
-      // Login fallido → mostrar error
-      setError("Credenciales incorrectas");
+      setError("Credenciales incorrectas")
     }
-  } catch (err) {
-    console.error("Error en la conexión con el backend:", err);
-    setError("No se pudo conectar con el backend");
   }
-};
-
 
   const handleInputChange = (field: keyof LoginCredentials) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCredentials((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }))
+    setCredentials(prev => ({ ...prev, [field]: e.target.value }))
   }
 
   return (
@@ -76,11 +50,7 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
@@ -88,8 +58,8 @@ export function LoginForm() {
                 id="email"
                 type="email"
                 placeholder="tu@ejemplo.com"
-                value={credentials.email}
-                onChange={handleInputChange("email")}
+                value={credentials.correo_electronico}
+                onChange={handleInputChange("correo_electronico")}
                 required
               />
             </div>
@@ -100,8 +70,8 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={credentials.password}
-                onChange={handleInputChange("password")}
+                value={credentials.contrasena}
+                onChange={handleInputChange("contrasena")}
                 required
               />
             </div>
@@ -124,6 +94,3 @@ export function LoginForm() {
     </div>
   )
 }
-
-
-    

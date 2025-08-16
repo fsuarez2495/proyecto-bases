@@ -91,8 +91,8 @@ export interface Color {
 
 // Tipos para la autenticación
 export interface LoginCredentials {
-  email: string
-  password: string
+  correo_electronico: string
+  contrasena: string
 }
 
 export interface AuthUser {

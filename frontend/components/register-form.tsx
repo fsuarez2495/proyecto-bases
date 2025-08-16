@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/contexts/auth-context"
 import type { RegisterCredentials } from "@/types/database"
+import router from "next/router"
 
 type Pais = {
   id_pais: number
@@ -49,21 +50,25 @@ export function RegisterForm() {
     fetchPaises()
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
 
-    if (!credentials.nombre || !credentials.apellido || !credentials.correo_electronico || !credentials.contrasena || !credentials.id_pais) {
-      setError("Por favor, completa todos los campos")
-      return
-    }
-
-    const success = await register(credentials)
-    if (!success) {
-      setError("Error al crear la cuenta. Intenta de nuevo.")
-    }
+  if (!credentials.nombre || !credentials.apellido || !credentials.correo_electronico || !credentials.contrasena || !credentials.id_pais) {
+    setError("Por favor, completa todos los campos")
+    return
   }
 
+  const success = await register(credentials)
+  
+  if (success) {
+    alert("Usuario registrado con éxito")
+    router.push("/login")  // Redirige al login
+  } else {
+    setError("Error al crear la cuenta. Intenta de nuevo.")
+  }
+}
+  
   const handleInputChange = (field: keyof RegisterCredentials) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials((prev) => ({
       ...prev,
@@ -80,6 +85,7 @@ export function RegisterForm() {
 
 
 //Fetch registro 
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
