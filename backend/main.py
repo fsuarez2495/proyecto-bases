@@ -3,7 +3,7 @@ import json
 from fastapi import FastAPI, Request, Response, Query
 from typing import List, Optional
 from models.paises import Pais
-from models.carpetas import CarpetaCreate
+from backend.models.crear_carpetas import CarpetaCreate
 from utils.database import execute_query_json
 from models.userregister import UserRegister
 from models.userlogin import UserLogin

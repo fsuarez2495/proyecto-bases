@@ -1,7 +1,7 @@
 # controllers/carpetas.py
 from fastapi import HTTPException
 from datetime import datetime
-from models.carpetas import CarpetaCreate
+from backend.models.crear_carpetas import CarpetaCreate
 from  utils.database import get_db_connection
 import oracledb
 
