@@ -48,3 +48,7 @@ from CARPETAS;
 
 SELECT *
 FROM USUARIOS2;
+
+SELECT owner, table_name 
+FROM all_tables 
+WHERE table_name LIKE 'USUARIOS2';

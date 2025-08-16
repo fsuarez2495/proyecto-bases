@@ -6,7 +6,7 @@ from typing import List, Optional
 from models.paises import Pais
 from utils.database import execute_query_json
 from models.userregister import UserRegister
-from models.userlogin import UserLogin
+from models.userlogin import UserLogin, Usuario
 from controllers.firebase import get_usuario_por_correo, register_user_firebase, login_user_firebase
 from models.colores import Colores
 from controllers.colores_controller import get_all_colores
@@ -64,7 +64,7 @@ async def signup(user: UserRegister):
 async def login(user: UserLogin):
     return await login_user_firebase(user)
 
-@app.get("/usuarios", response_model=UserLogin)
+@app.get("/usuarios", response_model=Usuario)
 async def obtener_usuario(correo: str):
     usuario = get_usuario_por_correo(correo)
     if usuario:

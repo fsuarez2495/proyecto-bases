@@ -129,25 +129,20 @@ def get_usuario_por_correo(correo: str) -> Usuario | None:
             apellido,
             correo_electronico,
             id_pais,
-            espacio_total,
-            espacio_usado
-        FROM usuarios
+            id_almacenamiento
+        FROM USUARIOS2
         WHERE correo_electronico = :correo
     """
     result = execute_query_json(query, params={"correo": correo})
     usuarios = json.loads(result)
     if usuarios:
-        u = usuarios[0]
+        u = usuarios[0] 
         return Usuario(
             id=u["id_usuario"],
             nombre=u["nombre"],
             apellido=u["apellido"],
             correo_electronico=u["correo_electronico"],
             id_pais=u["id_pais"],
-            almacenamiento={
-                "espacio_total": u["espacio_total"],
-                "espacio_usado": u["espacio_usado"]
-            }
         )
     return None
 
