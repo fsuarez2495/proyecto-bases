@@ -1,56 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  TrashIcon,
+  FileTextIcon,
+  ImageIcon,
+  VideoIcon,
+  FileIcon,
+  MessageCircleIcon,
+  FolderIcon,
+} from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
 } from "@/components/ui/alert-dialog"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import {
-  FolderIcon,
-  FileTextIcon,
-  ImageIcon,
-  VideoIcon,
-  FileIcon,
-  MoreVerticalIcon,
-  ShareIcon,
-  DownloadIcon,
-  TrashIcon,
-  StarIcon,
-  PlusIcon,
-  EditIcon,
-  ChevronRightIcon,
-  MessageCircleIcon,
-} from "lucide-react"
-import { useFiles } from "@/contexts/file-context"
 import { useComments } from "@/contexts/comments-context"
-import { FileUploadDialog } from "./file-upload-dialog"
-import { CreateFolderDialog } from "./create-folder-dialog"
-import { RenameDialog } from "./rename-dialog"
-import { ShareDialog } from "./share-dialog"
 import { CommentsPanel } from "./comments-panel"
+
+interface File {
+  id_archivo: number
+  nombre: string
+  extension: string
+  tamano_archivo: number
+  fecha_creacion: string
+}
+
+interface Folder {
+  id_carpeta: number
+  nombre: string
+  fecha_creacion: string
+}
 
 function getFileIcon(extension: string) {
   switch (extension.toLowerCase()) {
@@ -81,295 +69,200 @@ function formatFileSize(bytes: number): string {
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
+function formatDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })
 }
 
 export function FileGrid() {
-  const { files, folders, currentPath, navigateToFolder, deleteFile, deleteFolder } = useFiles()
   const { getCommentsForFile } = useComments()
-  const [selectedItems, setSelectedItems] = useState<string[]>([])
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; item: any; type: "file" | "folder" } | null>(null)
-  const [renameDialog, setRenameDialog] = useState<{ open: boolean; item: any } | null>(null)
-  const [commentsPanel, setCommentsPanel] = useState<{ open: boolean; fileId: number; fileName: string } | null>(null)
 
-  const handleItemSelect = (id: string, type: "file" | "folder") => {
-    const itemId = `${type}-${id}`
-    setSelectedItems((prev) => (prev.includes(itemId) ? prev.filter((item) => item !== itemId) : [...prev, itemId]))
-  }
+  const [files, setFiles] = useState<File[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [loading, setLoading] = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    id: number
+    name: string
+    type: "file" | "folder"
+  } | null>(null)
 
-  const handleFolderDoubleClick = (folder: any) => {
-    navigateToFolder(folder.id, folder.nombre)
-  }
+  const [commentsPanel, setCommentsPanel] = useState<{
+    open: boolean
+    fileId: number
+    fileName: string
+  } | null>(null)
 
-  const handleBreadcrumbClick = (pathIndex: number) => {
-    const targetPath = currentPath[pathIndex]
-    navigateToFolder(targetPath.id, targetPath.name)
-  }
+  // Fetch files and folders for current user
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const storedUser = localStorage.getItem("user")
+        if (!storedUser) {
+          setFiles([])
+          setFolders([])
+          return
+        }
+        const user = JSON.parse(storedUser)
+        const userId = user.id
 
-  const handleDelete = async () => {
-    if (!deleteDialog) return
+        // Fetch files
+        const filesRes = await fetch("http://localhost:8000/archivos")
+        const filesData = await filesRes.json()
+        const userFiles = filesData
+          .filter((f: any) => f.id_usuario_propietario === userId)
+          .map((f: any) => ({ ...f, extension: f.nombre.split(".").pop()?.toLowerCase() || "" }))
+        setFiles(userFiles)
 
-    if (deleteDialog.type === "file") {
-      await deleteFile(deleteDialog.item.id)
-    } else {
-      await deleteFolder(deleteDialog.item.id)
+        // Fetch folders
+        const foldersRes = await fetch("http://localhost:8000/carpetas")
+        const foldersData = await foldersRes.json()
+        const userFolders = foldersData.filter((f: any) => f.id_usuario_propietario === userId)
+        setFolders(userFolders)
+      } catch (err) {
+        console.error("Error fetching data:", err)
+        setFiles([])
+        setFolders([])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setDeleteDialog(null)
+    fetchData()
+  }, [])
+
+  // Delete a file or folder
+  const handleDelete = async (id: number, type: "file" | "folder") => {
+    try {
+      const endpoint =
+        type === "file"
+          ? `http://localhost:8000/archivos/${id}`
+          : `http://localhost:8000/carpetas/${id}`
+      const res = await fetch(endpoint, { method: "DELETE" })
+      if (!res.ok) throw new Error(`Failed to delete ${type}`)
+      if (type === "file") setFiles((prev) => prev.filter((f) => f.id_archivo !== id))
+      else setFolders((prev) => prev.filter((f) => f.id_carpeta !== id))
+      setDeleteDialog(null)
+    } catch (err) {
+      console.error("Error deleting:", err)
+    }
   }
 
-  const openCommentsPanel = (fileId: number, fileName: string) => {
-    setCommentsPanel({ open: true, fileId, fileName })
-  }
-
-  const closeCommentsPanel = () => {
-    setCommentsPanel(null)
-  }
+  if (loading) return <p>Cargando archivos y carpetas...</p>
+  if (!files.length && !folders.length) return <p>No hay archivos ni carpetas para mostrar</p>
 
   return (
-    <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            {currentPath.map((path, index) => (
-              <div key={path.id || "root"} className="flex items-center">
-                <BreadcrumbItem>
-                  <BreadcrumbLink
-                    onClick={() => handleBreadcrumbClick(index)}
-                    className="cursor-pointer hover:text-blue-600"
-                  >
-                    {path.name}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {index < currentPath.length - 1 && (
-                  <BreadcrumbSeparator>
-                    <ChevronRightIcon className="w-4 h-4" />
-                  </BreadcrumbSeparator>
-                )}
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        {/* Folders */}
+        {folders.map((folder) => (
+          <Card key={folder.id_carpeta} className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <FolderIcon className="w-8 h-8 text-blue-500" />
               </div>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
+              <h4 className="font-medium text-sm text-gray-900 truncate">{folder.nombre}</h4>
+              <p className="text-xs text-gray-500 mt-1">Creado: {formatDate(folder.fecha_creacion)}</p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-2 h-6 px-2 text-xs flex items-center justify-center"
+                onClick={() =>
+                  setDeleteDialog({
+                    open: true,
+                    id: folder.id_carpeta,
+                    name: folder.nombre,
+                    type: "folder",
+                  })
+                }
+              >
+                <TrashIcon className="w-3 h-3 mr-1" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+
+        {/* Files */}
+        {files.map((file) => {
+          const fileComments = getCommentsForFile(file.id_archivo)
+          const hasComments = fileComments.length > 0
+          return (
+            <Card key={file.id_archivo} className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  {getFileIcon(file.extension)}
+                  {hasComments && (
+                    <Badge variant="secondary" className="text-xs px-1 py-0">
+                      <MessageCircleIcon className="w-3 h-3 mr-1" />
+                      {fileComments.length}
+                    </Badge>
+                  )}
+                </div>
+                <h4 className="font-medium text-sm text-gray-900 truncate">{file.nombre}</h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formatFileSize(file.tamano_archivo)} • {formatDate(file.fecha_creacion)}
+                </p>
+                <div className="flex space-x-2 mt-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="h-6 px-2 text-xs flex items-center justify-center"
+                    onClick={() =>
+                      setDeleteDialog({ open: true, id: file.id_archivo, name: file.nombre, type: "file" })
+                    }
+                  >
+                    <TrashIcon className="w-3 h-3 mr-1" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs flex items-center justify-center"
+                    onClick={() =>
+                      setCommentsPanel({ open: true, fileId: file.id_archivo, fileName: file.nombre })
+                    }
+                  >
+                    <MessageCircleIcon className="w-3 h-3 mr-1" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
-      {/* Carpetas */}
-      {folders.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Carpetas</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {folders.map((folder) => (
-              <Card
-                key={folder.id}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${
-                  selectedItems.includes(`folder-${folder.id}`) ? "ring-2 ring-blue-500" : ""
-                }`}
-                onClick={() => handleItemSelect(folder.id.toString(), "folder")}
-                onDoubleClick={() => handleFolderDoubleClick(folder)}
+      {/* Confirmation dialog */}
+      {deleteDialog && (
+        <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción eliminará permanentemente {deleteDialog.type} "{deleteDialog.name}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => handleDelete(deleteDialog.id, deleteDialog.type)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <FolderIcon className="w-8 h-8 text-blue-500" />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVerticalIcon className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            setRenameDialog({
-                              open: true,
-                              item: { id: folder.id, name: folder.nombre, type: "folder" },
-                            })
-                          }
-                        >
-                          <EditIcon className="mr-2 h-4 w-4" />
-                          Renombrar
-                        </DropdownMenuItem>
-                        <ShareDialog item={{ id: folder.id, name: folder.nombre, type: "folder" }}>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <ShareIcon className="mr-2 h-4 w-4" />
-                            Compartir
-                          </DropdownMenuItem>
-                        </ShareDialog>
-                        <DropdownMenuItem>
-                          <StarIcon className="mr-2 h-4 w-4" />
-                          Destacar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => setDeleteDialog({ open: true, item: folder, type: "folder" })}
-                        >
-                          <TrashIcon className="mr-2 h-4 w-4" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <h4 className="font-medium text-sm text-gray-900 truncate">{folder.nombre}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{formatDate(folder.fecha_modificacion)}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
-      {/* Archivos */}
-      {files.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Archivos</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {files.map((file) => {
-              const fileComments = getCommentsForFile(file.id)
-              const hasComments = fileComments.length > 0
-
-              return (
-                <Card
-                  key={file.id}
-                  className={`cursor-pointer hover:shadow-md transition-shadow ${
-                    selectedItems.includes(`file-${file.id}`) ? "ring-2 ring-blue-500" : ""
-                  }`}
-                  onClick={() => handleItemSelect(file.id.toString(), "file")}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      {getFileIcon(file.extension)}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVerticalIcon className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setRenameDialog({ open: true, item: { id: file.id, name: file.nombre, type: "file" } })
-                            }
-                          >
-                            <EditIcon className="mr-2 h-4 w-4" />
-                            Renombrar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <DownloadIcon className="mr-2 h-4 w-4" />
-                            Descargar
-                          </DropdownMenuItem>
-                          <ShareDialog item={{ id: file.id, name: `${file.nombre}.${file.extension}`, type: "file" }}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                              <ShareIcon className="mr-2 h-4 w-4" />
-                              Compartir
-                            </DropdownMenuItem>
-                          </ShareDialog>
-                          <DropdownMenuItem
-                            onClick={() => openCommentsPanel(file.id, `${file.nombre}.${file.extension}`)}
-                          >
-                            <MessageCircleIcon className="mr-2 h-4 w-4" />
-                            Comentarios {hasComments && `(${fileComments.length})`}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <StarIcon className="mr-2 h-4 w-4" />
-                            Destacar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => setDeleteDialog({ open: true, item: file, type: "file" })}
-                          >
-                            <TrashIcon className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <h4 className="font-medium text-sm text-gray-900 truncate">
-                      {file.nombre}.{file.extension}
-                    </h4>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(file.tamaño)} • {formatDate(file.fecha_modificacion)}
-                      </p>
-                      {hasComments && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          <MessageCircleIcon className="w-3 h-3 mr-1" />
-                          {fileComments.length}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Estado vacío */}
-      {folders.length === 0 && files.length === 0 && (
-        <div className="text-center py-12">
-          <FolderIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay archivos aquí</h3>
-          <p className="text-gray-500 mb-4">Arrastra archivos aquí o usa el botón "Nuevo" para comenzar</p>
-          <div className="flex justify-center space-x-2">
-            <FileUploadDialog>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Subir archivos
-              </Button>
-            </FileUploadDialog>
-            <CreateFolderDialog>
-              <Button variant="outline">
-                <FolderIcon className="w-4 h-4 mr-2" />
-                Nueva carpeta
-              </Button>
-            </CreateFolderDialog>
-          </div>
-        </div>
-      )}
-
-      {/* Panel de comentarios */}
+      {/* Comments panel */}
       {commentsPanel && (
         <CommentsPanel
           fileId={commentsPanel.fileId}
           fileName={commentsPanel.fileName}
-          isOpen={commentsPanel.open}
-          onClose={closeCommentsPanel}
+          isOpen={commentsPanel?.open ?? false}
+          onClose={() => setCommentsPanel(null)}
         />
       )}
-
-      {/* Diálogo de confirmación de eliminación */}
-      <AlertDialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente {deleteDialog?.type === "file" ? "el archivo" : "la carpeta"} "
-              {deleteDialog?.item?.nombre || deleteDialog?.item?.name}".
-              {deleteDialog?.type === "folder" && " Todos los archivos dentro de la carpeta también serán eliminados."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Diálogo de renombrar */}
-      <RenameDialog
-        open={renameDialog?.open || false}
-        onOpenChange={(open) => !open && setRenameDialog(null)}
-        item={renameDialog?.item || null}
-      />
-    </div>
+    </>
   )
 }

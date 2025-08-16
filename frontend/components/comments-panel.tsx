@@ -1,28 +1,23 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useComments } from "@/contexts/comments-context"
-import { useAuth } from "@/contexts/auth-context"
-import { useSharing } from "@/contexts/sharing-context"
-import { MessageCircleIcon, SendIcon, MoreVerticalIcon, TrashIcon, XIcon } from "lucide-react"
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+
+interface Comment {
+  id_comentario: number
+  descripcion: string
+  fecha_comentario: string
+  id_usuario_comentador: number
+  id_archivo: number
+}
 
 interface CommentsPanelProps {
   fileId: number
@@ -32,180 +27,98 @@ interface CommentsPanelProps {
 }
 
 export function CommentsPanel({ fileId, fileName, isOpen, onClose }: CommentsPanelProps) {
+  const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; commentId: number } | null>(null)
-  const { getCommentsForFile, addComment, deleteComment, loading } = useComments()
-  const { user } = useAuth()
-  const { users } = useSharing()
+  const [loading, setLoading] = useState(false)
 
-  const fileComments = getCommentsForFile(fileId)
-
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
-
-    await addComment(fileId, newComment)
-    setNewComment("")
-  }
-
-  const handleDeleteComment = async () => {
-    if (!deleteDialog) return
-    await deleteComment(deleteDialog.commentId)
-    setDeleteDialog(null)
-  }
-
-  const getUserInfo = (userId: number) => {
-    return users.find((u) => u.id === userId)
-  }
-
-  const formatDate = (date: Date) => {
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor(diffInHours * 60)
-      return `hace ${diffInMinutes} minuto${diffInMinutes !== 1 ? "s" : ""}`
-    } else if (diffInHours < 24) {
-      const hours = Math.floor(diffInHours)
-      return `hace ${hours} hora${hours !== 1 ? "s" : ""}`
-    } else {
-      return date.toLocaleDateString("es-ES", {
-        day: "numeric",
-        month: "short",
-        year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+  // Fetch comments when modal opens
+  const fetchComments = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/comentarios")
+      const data: Comment[] = await res.json()
+      const fileComments = data.filter((c) => c.id_archivo === fileId)
+      setComments(fileComments)
+    } catch (err) {
+      console.error("Error fetching comments:", err)
     }
   }
 
-  if (!isOpen) return null
+  useEffect(() => {
+    if (isOpen) fetchComments()
+  }, [isOpen])
+
+  const handleAddComment = async () => {
+    const storedUser = localStorage.getItem("user")
+    if (!storedUser || !newComment.trim()) return
+    const user = JSON.parse(storedUser)
+
+    const payload = {
+      descripcion: newComment.trim(),
+      id_usuario_comentador: user.id,
+      id_archivo: fileId,
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch("http://localhost:8000/comentarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error("Failed to post comment")
+      const created = await res.json()
+      setComments((prev) => [...prev, created])
+      setNewComment("")
+    } catch (err) {
+      console.error("Error posting comment:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <MessageCircleIcon className="w-5 h-5 text-gray-600" />
-          <div>
-            <h3 className="font-medium text-gray-900">Comentarios</h3>
-            <p className="text-sm text-gray-500 truncate max-w-48">{fileName}</p>
-          </div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <XIcon className="w-4 h-4" />
-        </Button>
-      </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Comentarios: {fileName}</DialogTitle>
+          <DialogDescription>
+            Aquí puedes ver y agregar comentarios al archivo.
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Comments List */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {fileComments.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No hay comentarios aún</p>
-              <p className="text-gray-400 text-xs">Sé el primero en comentar</p>
-            </div>
+        <div className="space-y-4 max-h-[400px] overflow-y-auto mt-4">
+          {comments.length ? (
+            comments.map((c) => (
+              <div key={c.id_comentario} className="border-b py-2">
+                <p className="text-sm">{c.descripcion}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(c.fecha_comentario).toLocaleString("es-ES")}
+                </p>
+              </div>
+            ))
           ) : (
-            fileComments.map((comment) => {
-              const commentUser = getUserInfo(comment.usuario_id)
-              const isOwnComment = user?.id === comment.usuario_id
-
-              return (
-                <Card key={comment.id} className="border-0 shadow-none bg-gray-50">
-                  <CardContent className="p-3">
-                    <div className="flex items-start space-x-3">
-                      <Avatar className="w-8 h-8 flex-shrink-0">
-                        <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                          {commentUser?.nombre.charAt(0)}
-                          {commentUser?.apellido.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {commentUser?.nombre} {commentUser?.apellido}
-                            </p>
-                            <p className="text-xs text-gray-500">{formatDate(comment.fecha_creacion)}</p>
-                          </div>
-                          {isOwnComment && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                  <MoreVerticalIcon className="w-3 h-3" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  className="text-red-600"
-                                  onClick={() => setDeleteDialog({ open: true, commentId: comment.id })}
-                                >
-                                  <TrashIcon className="mr-2 h-3 w-3" />
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{comment.contenido}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })
+            <p className="text-gray-500 text-sm">No hay comentarios todavía.</p>
           )}
         </div>
-      </ScrollArea>
 
-      {/* Add Comment Form */}
-      <div className="p-4 border-t border-gray-200">
-        <form onSubmit={handleSubmitComment} className="space-y-3">
-          <Textarea
+        <div className="flex mt-4 gap-2">
+          <Input
             placeholder="Escribe un comentario..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="min-h-20 resize-none"
             disabled={loading}
           />
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!newComment.trim() || loading}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {loading ? (
-                "Enviando..."
-              ) : (
-                <>
-                  <SendIcon className="w-3 h-3 mr-1" />
-                  Comentar
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
+          <Button onClick={handleAddComment} disabled={loading}>
+            {loading ? "Enviando..." : "Agregar"}
+          </Button>
+        </div>
 
-      {/* Delete Comment Dialog */}
-      <AlertDialog open={deleteDialog?.open || false} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar comentario?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente tu comentario. No se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteComment} className="bg-red-600 hover:bg-red-700">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Cerrar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -18,7 +18,7 @@ def get_all_folders() -> List[Carpetas]:
     return [Carpetas(**folder) for folder in result_list]
 
 
-def create_carpeta(nombre: str) -> dict:
+def create_carpeta(nombre: str, id_usuario_propietario: int) -> dict:
     """
     Crea una nueva carpeta en la base de datos con valores por defecto.
     No usa RETURNING INTO.
@@ -48,7 +48,7 @@ def create_carpeta(nombre: str) -> dict:
         "nombre": nombre,
         "fecha_creacion": datetime.now(),
         "fecha_ultima_modificacion": datetime.now(),
-        "id_usuario_propietario": 21,
+        "id_usuario_propietario": id_usuario_propietario,
         "id_carpeta_padre": None,
         "id_color": 1,
         "estado_papelera": 0

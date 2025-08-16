@@ -30,10 +30,11 @@ export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
   const [folderName, setFolderName] = useState("")
   const [colors, setColors] = useState<Color[]>([])
   const [selectedColor, setSelectedColor] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const { createFolder, loading } = useFiles()
+  const { addFolderToState } = useFiles() // Optional: update your local state after creation
 
-  // 🔹 Obtener colores desde el backend
+  // 🔹 Fetch colors from backend
   useEffect(() => {
     const fetchColors = async () => {
       try {
@@ -52,10 +53,40 @@ export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
     e.preventDefault()
     if (!folderName.trim() || !selectedColor) return
 
-    await createFolder(folderName.trim(), selectedColor) // 🔹 Le mandamos color
-    setFolderName("")
-    setSelectedColor(null)
-    setOpen(false)
+    const storedUser = localStorage.getItem("user")
+    if (!storedUser) {
+      console.warn("No user logged in")
+      return
+    }
+    const user = JSON.parse(storedUser)
+    const userId = user.id
+
+    setLoading(true)
+    try {
+      const res = await fetch("http://localhost:8000/carpetas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: folderName.trim(),
+          id_color: selectedColor,
+          id_usuario_propietario: userId,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Error creando carpeta")
+      const newFolder = await res.json()
+
+      // Optional: update local state immediately
+      if (addFolderToState) addFolderToState(newFolder)
+
+      setFolderName("")
+      setSelectedColor(null)
+      setOpen(false)
+    } catch (err) {
+      console.error("Error creando carpeta:", err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -79,7 +110,7 @@ export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
             />
           </div>
 
-          {/* 🔹 Selector de colores */}
+          {/* Folder color selector */}
           <div className="space-y-2">
             <Label>Color de la carpeta</Label>
             <div className="flex flex-wrap gap-2">
@@ -87,8 +118,9 @@ export function CreateFolderDialog({ children }: CreateFolderDialogProps) {
                 <button
                   key={color.id_color}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 transition 
-                    ${selectedColor === color.id_color ? "border-black scale-110" : "border-gray-300"}`}
+                  className={`w-8 h-8 rounded-full border-2 transition ${
+                    selectedColor === color.id_color ? "border-black scale-110" : "border-gray-300"
+                  }`}
                   style={{ backgroundColor: color.codigo_hex }}
                   onClick={() => setSelectedColor(color.id_color)}
                 />

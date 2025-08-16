@@ -55,3 +55,33 @@ WHERE table_name LIKE 'USUARIOS2';
 
 select *
 from archivos;
+
+SELECT 
+    A.ID_USUARIO,
+    A.NOMBRE AS nombre_usuario,
+    B.NOMBRE AS nombre_archivo
+FROM 
+    USUARIOS2 A
+JOIN 
+    Archivos B
+ON 
+    A.ID_USUARIO = B.id_usuario_propietario
+WHERE 
+    A.ID_USUARIO = 9;  
+
+
+SELECT 
+    A.ID_USUARIO,
+    A.NOMBRE AS nombre,
+    B.NOMBRE AS nombre
+FROM 
+    USUARIOS2 A
+JOIN 
+    Carpetas B
+ON 
+    A.ID_USUARIO = B.id_usuario_propietario
+WHERE 
+    A.ID_USUARIO = 9;  
+
+SELECT *
+FROM CARPETAS;

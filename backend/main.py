@@ -88,7 +88,7 @@ async def list_carpetas():
 
 @app.post("/carpetas", response_model=Carpetas)
 async def add_carpeta(carpeta: Carpetas):
-    return create_carpeta(carpeta.nombre)
+    return create_carpeta(nombre = carpeta.nombre, id_usuario_propietario = carpeta.id_usuario_propietario )
 
 @app.get("/colores", response_model=List[Colores])
 async def list_colores():
