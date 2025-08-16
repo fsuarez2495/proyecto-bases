@@ -8,7 +8,6 @@ from typing import Optional
 
 router = APIRouter(prefix="/folders", tags=["Folders"])
 
-# Aquí se definen las rutas para carpetas
 @router.post("/", response_model=FolderResponse)
 def create_folder(folder: FolderCreate, db=Depends(get_db_connection)):
     manager = FolderManager(db)
@@ -40,5 +39,3 @@ def get_folder(id_carpeta: int, db=Depends(get_db_connection)):
         return folder
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-# Agrega más rutas según sea necesario...
