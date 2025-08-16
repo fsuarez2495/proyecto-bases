@@ -28,8 +28,10 @@ export function DriveSidebar({ onSectionChange }: DriveSidebarProps) {
 
   if (!user) return null
 
-  const storageUsed = user.almacenamiento.espacio_usado
-  const storageTotal = user.almacenamiento.espacio_total
+  console.log(user)
+
+  const storageUsed = 1
+  const storageTotal = 15000
   const storagePercentage = (storageUsed / storageTotal) * 100
 
   const sidebarItems: SidebarItem[] = [
@@ -125,7 +127,7 @@ export function DriveSidebar({ onSectionChange }: DriveSidebarProps) {
         </div>
         <Progress value={storagePercentage} className="mb-2" />
         <p className="text-xs text-gray-500">
-          {(storageUsed / 1000000000).toFixed(1)} GB de {(storageTotal / 1000000000).toFixed(0)} GB usados
+          0 GB de 15 GB usados
         </p>
         <Button variant="outline" size="sm" className="w-full mt-2 text-xs bg-transparent">
           Comprar almacenamiento
