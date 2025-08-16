@@ -28,6 +28,10 @@ from utils.security import validate
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 logging.basicConfig( level=logging.INFO )
 logger = logging.getLogger(__name__)
 
@@ -43,7 +47,7 @@ app = FastAPI(title="Drive API", version="0.0.1",  lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # <- En producción, pon solo tu dominio, ej: ["https://midominio.com"]
+    allow_origins=["http://localhost:3000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

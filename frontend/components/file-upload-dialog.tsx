@@ -13,7 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
-import { useFiles } from "@/contexts/file-context"
 import { UploadIcon, FileIcon, XIcon } from "lucide-react"
 
 interface FileUploadDialogProps {
@@ -25,43 +24,7 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { uploadFile } = useFiles()
 
-  // ------------------ API FUNCTIONS -------------------
-  const getArchivos = async () => {
-    const res = await fetch("http://localhost:8000/archivos")
-    if (!res.ok) throw new Error("Error fetching archivos")
-    return res.json()
-  }
-
-  const createArchivo = async (
-    nombre: string,
-    id_usuario_propietario: number,
-    id_tipo_archivo: number
-  ) => {
-    const res = await fetch("http://localhost:8000/archivos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, id_usuario_propietario, id_tipo_archivo }),
-    })
-    if (!res.ok) throw new Error("Error creating archivo")
-    return res.json()
-  }
-
-  const deleteArchivo = async (id_archivo: number) => {
-    const res = await fetch(`http://localhost:8000/archivos/${id_archivo}`, {
-      method: "DELETE",
-    })
-    if (!res.ok) throw new Error("Error deleting archivo")
-    return res.json()
-  }
-
-  const refreshArchivos = async () => {
-    const data = await getArchivos()
-    console.log("Archivos actuales:", data)
-  }
-
-  // ------------------ HANDLERS -------------------
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     setSelectedFiles(files)
@@ -84,15 +47,40 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return
 
+    const storedUser = localStorage.getItem("user")
+    if (!storedUser) {
+      alert("No user logged in")
+      return
+    }
+    const user = JSON.parse(storedUser)
+    const userId = user.id
+
     setUploading(true)
     try {
       for (const file of selectedFiles) {
-        // Post metadata expected by backend
-        await createArchivo(file.name, 41, 1) // ⚡ fixed body
+        const body = {
+          nombre: file.name,
+          id_tipo_archivo: 1,
+          id_usuario_propietario: userId,
+          tamano_archivo: file.size,
+        }
+
+        const res = await fetch("http://127.0.0.1:8000/archivos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+
+        const data = await res.text()
+        console.log("Upload response:", res.status, data)
+
+        if (!res.ok) throw new Error(`Error uploading ${file.name}: ${data}`)
       }
       setSelectedFiles([])
       setOpen(false)
-      await refreshArchivos()
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || "Error uploading files")
     } finally {
       setUploading(false)
     }
@@ -106,7 +94,6 @@ export function FileUploadDialog({ children }: FileUploadDialogProps) {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
-  // ------------------ UI -------------------
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
